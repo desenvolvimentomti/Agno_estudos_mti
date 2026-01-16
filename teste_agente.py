@@ -3,19 +3,27 @@ from agno.knowledge.knowledge import Knowledge
 from agno.knowledge.reader.youtube_reader import YouTubeReader
 from agno.vectordb.pgvector import PgVector
 
+# tools 
 from agno.models.openai import OpenAIChat
 from agno.tools.openai import OpenAITools
 from agno.tools.duckduckgo import DuckDuckGoTools
+
+# memory
+from agno.db.postgres import PostgresDb
+
+
+
 from dotenv import load_dotenv
 import os
-# Verificação de segurança da API Key
+
+# 
 load_dotenv()
 
 # Verificação de segurança da API Key
 if not os.getenv("OPENAI_API_KEY"):
     print("❌ Erro: OPENAI_API_KEY não encontrada no arquivo .env")
     exit()
-
+# Verificação de segurança do DB postgres 
 if not os.getenv("db_url"):
     print("❌ Erro: db_url não encontrada no arquivo .env")
     exit()
@@ -41,7 +49,7 @@ knowledge_base.add_content(
     #url="https://www.youtube.com/watch?v=9H8EJLN9qXU", # efap 369
     url="https://www.youtube.com/watch?v=I8U6kjqLkJQ", # Randon Game of thrones
     skip_if_exists= True,
-    
+
     reader=YouTubeReader(),
 )
 knowledge_base.add_content(
@@ -61,6 +69,15 @@ knowledge_base.add_content(
 )
 #knowledge_base.load(recreate=False) # não funciona na versão atual 
 
+# Configura o armazenamento das conversas no mesmo banco do Docker
+db = PostgresDb(
+  db_url=db_url,
+  memory_table="user_memories",  # Optionally specify a table name for the memories
+)
+
+
+
+
 # Create an agent with the knowledge
 agent = Agent(
     model= OpenAIChat(id="gpt-5-nano",
@@ -69,12 +86,23 @@ agent = Agent(
                           "reconheça a diferença entre cada um dos locutores do podcast",
                           "Sempre diga se a informação veio do Knowledge Base ou da sua base de treinamento.",
                           "Se encontrar a resposta no Knowledge Base, cite trechos específicos.",
+                          " Sabemos que os comentaristas que geralmente falam no podcast EFAP (everyframeapause ) são :Fringy,Rags,Mauler,The Little Platoon "
 
                           ]
                       ),
     tools=[OpenAITools(all),DuckDuckGoTools()],
+    # acesso ao banco de dados
     knowledge=knowledge_base,
     search_knowledge=True,
+
+    # acesso as conversas anteriores. para informar a resposta
+    db=db,
+    # Give the Agent the ability to update memories
+    enable_agentic_memory=True,
+    # OR - Run the MemoryManager automatically after each response
+    enable_user_memories=True,
+
+
     markdown=True,
     debug_mode=True,
 )

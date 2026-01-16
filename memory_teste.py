@@ -6,6 +6,7 @@ db = SqliteDb(db_file="tmp/data.db")
 
 # Setup a basic agent with the SQLite database
 agent = Agent(
+    model='openai:gpt-5-nano',
     db=db,
     enable_user_memories=True,
     markdown=True,
@@ -17,8 +18,8 @@ while True:
     if pergunta.lower() in ["sair", "exit", "quit"]:
         break
     
-    # O agente processa a pergunta e busca no DuckDB
+    # O agente processa a pergunta 
     agent.print_response(pergunta, stream=True)
 
-#agent.print_response("My name is John Doe and I like to play basketball on the weekends.")
-#agent.print_response("What's do I do in weekends?")
+agent.print_response("My name is John Doe and I like to play basketball on the weekends.")
+agent.print_response("What's do I do in weekends?")
